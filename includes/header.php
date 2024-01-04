@@ -11,7 +11,7 @@
  * 
  * @author Bhao
  * @link https://dwd.moe/
- * @version 2.0.1
+ * @date 2023-12-09
  */
 
 if (!defined('__TYPECHO_ROOT_DIR__')) exit;
@@ -19,11 +19,33 @@ if (!defined('__TYPECHO_ROOT_DIR__')) exit;
 $primaryColor = $this->options->primaryColor;
 $accentColor = $this->options->accentColor;
 ?>
+<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0,maximum-scale=1.0, user-scalable=no">
+  <?php if ($this->is('index')): ?>
+    <meta property="og:type" content="blog"/>
+    <meta property="og:url" content="<?php $this->options->siteUrl();?>"/>
+    <meta property="og:title" content="<?php $this->options->webTitle();?>"/>
+    <meta property="og:image" content="<?php $this->options->logoUrl();?>"/>
+    <meta property="og:author" content="<?php $this->author->name();?>"/>
+    <meta name="keywords"  content="<?php $this->keywords();?>">
+    <meta name="description"  content="<?php $this->options->description();?>">
+  <?php endif;?>
+  <?php if ($this->is('post') || $this->is('page') || $this->is('attachment')): ?>
+    <meta property="og:url" content="<?php $this->permalink();?>"/>
+    <meta property="og:title" content="<?php $this->title();?> - <?php $this->options->title();?>"/>
+    <meta property="og:author" content="<?php $this->author();?>"/>
+    <meta property="og:type" content="article"/>
+    <meta property="og:image" content="<?php $wzimg = $this->fields->wzimg; echo empty($wzimg) ? randPic() : $wzimg; ?>"/>
+    <meta property="og:description" content="<?php $this->excerpt(); ?>"/>
+    <meta property="article:published_time" content="<?php $this->date('c'); ?>"/>
+    <meta property="article:published_first" content="<?php $this->options->title() ?>, <?php $this->permalink() ?>" />
+    <meta name="keywords" content="<?=$this->keywords()?>">
+    <meta name="description" content="<?=$this->getDescription()?>" />
+  <?php endif;?>
   <title><?php $this->archiveTitle(array('category' => _t('分类 %s 下的文章'), 'search' => _t('包含关键字 %s 的文章'), 'tag' => _t('标签 %s 下的文章'), 'author' => _t('%s 发布的文章')), '', ' - ');$this->options->webTitle(); ?></title>
   <link rel="shortcut icon" href="<?php setting("favicon", "images/favicon.ico"); ?>" />
   <link rel="stylesheet" href="<?php staticFiles('css/mdui.min.css') ?>">
@@ -31,6 +53,7 @@ $accentColor = $this->options->accentColor;
   <link rel="stylesheet" href="<?php staticFiles('css/iconfont.min.css') ?>">
   <link rel="stylesheet" href="<?php staticFiles('css/tocbot.min.css') ?>">
   <link rel="stylesheet" href="<?php staticFiles('css/fancybox.min.css') ?>">
+  <link rel="stylesheet" href="<?php staticFiles('css/katex.min.css') ?>">
   <link rel="stylesheet" href="<?php staticFiles('css/cuckoo.min.css') ?>">
   <script src="<?php staticFiles('js/tocbot.min.js') ?>"></script>
   <script src="<?php staticFiles('js/nprogress.min.js') ?>"></script>
@@ -56,7 +79,7 @@ $accentColor = $this->options->accentColor;
         <button class="mdui-textfield-close mdui-btn mdui-btn-icon"><i class="mdui-icon material-icons">close</i></button>
       </div>
       <button class="mdui-btn mdui-btn-icon qrcode" mdui-menu="{target: '#qrcode'}" mdui-tooltip="{content: '跨设备阅读'}"><i class="mdui-icon material-icons">devices</i></button>
-      <div class="mdui-menu" id="qrcode" style="width: 170px;height: 170px;transform-origin: 100% 0px; position: fixed; text-align:center;"><div style='margin-top: 63px;' class="mdui-spinner mdui-spinner-colorful"></div></div>
+      <div class="mdui-menu" id="qrcode" style="overflow-y: hidden;width: 170px;height: 170px;transform-origin: 100% 0px; position: fixed; text-align:center;"><div style='margin-top: 63px;' class="mdui-spinner mdui-spinner-colorful"></div></div>
       <button onclick="brightness()" id="brightness" class="mdui-textfield-close mdui-btn mdui-btn-icon"><i class="mdui-icon material-icons">brightness_5</i></button>
       <button onclick="tocBotton()" id="tocBotton" class="mdui-textfield-close mdui-btn mdui-btn-icon"><i class="mdui-icon material-icons">bookmark</i></button>
     </div>
@@ -68,7 +91,7 @@ $accentColor = $this->options->accentColor;
     </div>
     <div class="mdui-divider"></div>
     <ul class="mdui-list drawer-list" mdui-collapse="{accordion: true}">
-      <a href="<?php Helper::options()->siteUrl() ?>">
+      <a href="<?php Helper::options()->siteUrl() ?>" mdui-drawer-close>
         <li class="mdui-list-item mdui-ripple"><i class="mdui-list-item-icon mdui-icon material-icons">home</i>
           <div class="mdui-list-item-content">首页</div>
         </li>

@@ -7,7 +7,7 @@
  *
  * @package Cuckoo
  * @author Bhao
- * @version 2.0.1
+ * @version 2.1.0
  * @link https://dwd.moe
  * @date 2020-02-02
  */
@@ -59,7 +59,10 @@ if ($sticky && $this->is('index') || $this->is('front')) {
               <div class="mdui-card-primary index-primary">
                 <div class="mdui-card-primary-title"><?php $this->sticky();$this -> title(); ?></div>
                 <div class="mdui-card-primary-subtitle index-info"><?php $this -> date(); ?>
-                  ｜<?php $this -> commentsNum('0 条评论', '1 条评论', '%d 条评论'); ?></div>
+                  <?php if ($this->options->showComments) {
+                    echo '｜'; $this -> commentsNum('0 条评论', '1 条评论', '%d 条评论');
+                  } ?>
+                </div>
                 <div class="mdui-card-primary-subtitle index-subtitle"><?php $this -> excerpt(); ?></div>
               </div>
             </div>
@@ -77,6 +80,22 @@ if ($sticky && $this->is('index') || $this->is('front')) {
         </div>
         <div class="mdui-card-content mdui-typo"><?php parseContent(parseBiaoQing($this->content)); ?></div>
       </div>
+    <?php } elseif ($this->fields->articleType == "normal") { ?>
+      <a class="post index-normal" href="<?php $this -> permalink() ?>">
+        <div class="mdui-card index-card-normal mdui-hoverable">
+          <div class="mdui-card-primary index-primary-normal">
+            <div class="mdui-card-primary-title"><?php $this->sticky();$this->title(); ?></div>
+            <div class="mdui-card-primary-subtitle"><?php $this->date(); ?>
+              <?php if ($this->options->showComments) {
+                echo '｜'; $this -> commentsNum('0 条评论', '1 条评论', '%d 条评论');
+              } ?>
+            </div>
+            <?php if (strlen($this->fields->remark)) {
+              echo '<div class="mdui-chip mdui-color-theme index-chip-normal"><span class="mdui-chip-title">'.$this->fields->remark.'</span></div>';
+            } ?>
+          </div>
+        </div>
+      </a>
       <?php
     }
     endwhile; ?>
@@ -86,7 +105,7 @@ if ($sticky && $this->is('index') || $this->is('front')) {
       <span class="infinite-scroll-request">加载中...</span>
       <span class="infinite-scroll-last">到底了啦</span>
     </div>
-    <?php if($this->getTotal() > 1){ ?>
+    <?php if($this->getTotal() > 1 && $this->getTotalPage() !== 1){ ?>
       <div class="changePage changePage-load">加载更多</div>
     <?php }else{ ?>
       <div class="changePage">到底了啦</div>

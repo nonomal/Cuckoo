@@ -11,25 +11,27 @@
  * 
  * @author Bhao
  * @link https://dwd.moe/
- * @version 2.0.1
+ * @date 2024-01-02
  */
 
 if (!defined('__TYPECHO_ROOT_DIR__')) exit;
 
 define("THEME_NAME", "Cuckoo");
-define("THEME_VERSION", "2.0.1");
+define("THEME_VERSION", "2.1.0");
 
 require_once("includes/setting.php");
 require_once("includes/owo.php");
 
 // 文章自定义设置
 function themeFields($layout) {
-  $articleType = new Typecho_Widget_Helper_Form_Element_Select('articleType',array('article' => '文章', 'daily' => '日常'), 'article', _t('文章类型'));
+  $articleType = new Typecho_Widget_Helper_Form_Element_Select('articleType',array('article' => '文章', 'daily' => '日常', 'normal' => '无封面'), 'article', _t('文章类型'));
   $layout->addItem($articleType);
   $wzimg = new Typecho_Widget_Helper_Form_Element_Text('wzimg', NULL, NULL, _t('文章/独立页面封面图'), _t('如果不填将显示随机封面图'));
   $layout->addItem($wzimg);
   $catalog = new Typecho_Widget_Helper_Form_Element_Select('catalog',array('false' => '关闭', 'true' => '启用'), 'false', _t('文章目录'), _t('默认关闭，启用则显示“文章目录”'));
   $layout->addItem($catalog);
+  $remark = new Typecho_Widget_Helper_Form_Element_Text('remark', NULL, NULL, _t('吐槽'), _t('仅文章类型为 无封面 时有效'));
+  $layout->addItem($remark);
 }
 
 // Typecho 设置
@@ -64,6 +66,12 @@ function contact(){
         $website = "mailto:";
       }elseif($key == "netease-music"){
         $website = "//music.163.com/#/user/home?id=";
+      }elseif($key == "zhihu") {
+        $website = "//www.zhihu.com/people/";
+      }elseif($key == "tencent-kg") {
+        $website = "//static-play.kg.qq.com/node/personal_v2?uid=";
+      }elseif($key == "douyin") {
+        $website = "//v.douyin.com/";
       }
       print_r('<a target ="_blank" href="'.$website.$value.'"><button class="mdui-btn mdui-btn-icon mdui-ripple"><i class="iconfont icon-'.$key.'"></i></button></a>');
     }
@@ -146,24 +154,53 @@ function parseBiaoQing($content) {
 // 判断是否为好丽友
 function get_comment_prefix($mail){
   $db = Typecho_Db::get();
+  $type = explode('_', $db->getAdapterName());
+  $type = array_pop($type);
   $prefix = $db->getPrefix();
   if(array_key_exists('Links', Typecho_Plugin::export()['activated'])){
-    $number = $db->fetchAll($db->query("SELECT user FROM ".$prefix."links WHERE user = '$mail'"));
+    if ($type == 'Pgsql')
+      $number = $db->fetchAll($db->query("SELECT \"user\" FROM ".$prefix."links WHERE \"user\" = '$mail'"));
+    else
+      $number = $db->fetchAll($db->query("SELECT user FROM ".$prefix."links WHERE user = '$mail'"));
     if($number){
-      ?><img src="<?php staticFiles('images/grade/friend.png'); ?>" class="comment-prefix" mdui-tooltip="{content: '好朋友'}"/><?php
+      ?><img src="<?php staticFiles('images/friend.png'); ?>" class="comment-prefix" mdui-tooltip="{content: '好朋友'}"/><?php
     }
   }
 }
 
 // 静态文件源
-function staticFiles($content, $type = 0) {
+function staticFiles($content, $type = 0, $isExternal = 0) {
   $setting = Helper::options()->staticFiles;
-  if($setting == 'local') {
-    $output = Helper::options()->themeUrl.'/assets/'.$content;
-  }elseif($setting == 'jsdelivr') {
-    $output = 'https://cdn.jsdelivr.net/gh/Bhaoo/Cuckoo@'.THEME_VERSION.'/assets/'.$content;
-  }elseif($setting == 'cdn') {
-    $output = Helper::options()->staticCdn.'/'.$content;
+  if($isExternal){
+    if($setting == 'local' || $setting == 'cdn'){
+      $setting = Helper::options()->staticFiles;
+    }else{
+      $setting = 'jsdelivr';
+    }
+  }
+  switch($setting){
+    case 'jsdelivr':
+      $output = 'https://gcore.jsdelivr.net/gh/Bhaoo/Cuckoo@'.THEME_VERSION.'/assets/'.$content;
+      break;
+    case 'cdn':
+      $output = Helper::options()->staticCdn.'/'.$content;
+      break;
+    case 'cdnjs':
+      $output = 'https://cdnjs.cloudflare.com/ajax/libs/Cuckoo/'.THEME_VERSION.'/'.$content;
+      break;
+    case 'staticfile':
+      $output = 'https://cdn.staticfile.org/Cuckoo/'.THEME_VERSION.'/'.$content;
+      break;
+    case 'bootcdn':
+      $output = 'https://cdn.bootcdn.net/ajax/libs/Cuckoo/'.THEME_VERSION.'/'.$content;
+      break;
+    case 'baomitu':
+      $output = 'https://lib.baomitu.com/Cuckoo/'.THEME_VERSION.'/'.$content;
+      break;
+    case 'local':
+    default:
+      $output = Helper::options()->themeUrl.'/assets/'.$content;
+      break;
   }
   if($type == 0){
     print_r($output);
@@ -182,10 +219,10 @@ function randPic(){
   }elseif ($setting == 'local') {
     $openfile = glob(Helper::options()->themeFile("Cuckoo", "random/*"), GLOB_BRACE);
     $img = array_rand($openfile);
-    preg_match('/\/random\/\S*\.(jpg|png|gif)/', $openfile[$img], $out);
+    preg_match('/\/random\/\S*\.(jpg|png|gif|webp)/', $openfile[$img], $out);
     $output = Helper::options()->siteUrl.'usr/themes/Cuckoo'.$out[0];
   }elseif ($setting == 'cdn'){
-    $output = preg_replace('{rand}', $rand, $setting_cdn);
+    $output = preg_replace('/{rand}/', $rand, $setting_cdn);
   }elseif ($setting == '9jojo'){
     $output = 'https://api.baka.fun/acgpic/?rand='.$rand;
   }
@@ -205,9 +242,14 @@ function readingTime($cid){
 function get_post_view($archive){
   $cid = $archive->cid;
   $db = Typecho_Db::get();
+  $type = explode('_', $db->getAdapterName());
+  $type = array_pop($type);
   $prefix = $db->getPrefix();
   if(!array_key_exists('views', $db->fetchRow($db->select()->from('table.contents')))){
-    $db->query('ALTER TABLE `' . $prefix . 'contents` ADD `views` INT(10) DEFAULT 0;');
+    if ($type == 'Pgsql')
+      $db->query('ALTER TABLE "' . $prefix . 'contents" ADD "views" bigint DEFAULT 0;');
+    else
+      $db->query('ALTER TABLE `' . $prefix . 'contents` ADD `views` INT(10) DEFAULT 0;');
     echo 0;
     return;
   }
@@ -236,36 +278,35 @@ function get_comment_avatar($moe = NULL){
     $host = 'https://sdn.geekzu.org/avatar/';
   }elseif($gravatar == 'qiniu'){
     $host = 'https://dn-qiniu-avatar.qbox.me/avatar';
+  }elseif($gravatar == 'cravatar'){
+      $host = 'https://cravatar.cn/avatar';
   }elseif($gravatar == 'cdn'){
     $host = Helper::options()->gravatarCdn;
   }
   $hash = md5(strtolower($moe));
-  $email = strtolower($moe);
-  $qq = str_replace('@qq.com','',$email);
-  if(strstr($email,"qq.com") && is_numeric($qq) && strlen($qq) < 11 && strlen($qq) > 4){
-    $avatar = '//q1.qlogo.cn/g?b=qq&nk='.$qq.'&s=100';
-  }else{
-    $avatar = $host.'/'.$hash.'?s=100';
-  }
+  $avatar = $host.'/'.$hash.'?s=100';
   echo $avatar;
 }
 
 // 更多CSS
 function otherCss(){
   echo (Helper::options()->otherCss) ?  '<style>'.Helper::options()->otherCss.'</style>' : '';
+  echo (Helper::options()->otherHeader) ?? '';
 }
 
-// 更多JS、百度统计、跨设备阅读
+// 更多JS、百度统计、跨设备阅读、Katex
 function otherJs(){
   if(Helper::options()->brightTime || Helper::options()->statisticsBaidu || (Helper::options()->qrcode && in_array('open', Helper::options()->qrcode)) || Helper::options()->otherJs || !Helper::options()->describe){
     $brightTime_arr = (Helper::options()->brightTime) ? explode(',', Helper::options()->brightTime) : '';
     $string = '<script>';
     $string .= (Helper::options()->statisticsBaidu) ? "var _hmt = _hmt || [];(function() {var hm = document.createElement('script');hm.src = 'https://hm.baidu.com/hm.js?". Helper::options()->statisticsBaidu ."';var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(hm, s);})();" : '';
     $string .= (Helper::options()->qrcode && in_array('open', Helper::options()->qrcode)) ? "qrcode(true);" : '';
-    $string .= ($brightTime_arr) ? "var nowHour=new Date().getHours();if(nowHour>".$brightTime_arr[0]." || nowHour<".$brightTime_arr[1]."){darkContent('".$brightTime_arr[2]."')};" : '';
+    $string .= ($brightTime_arr) ? "var nowHour=new Date().getHours();if(nowHour>".$brightTime_arr[0]." && nowHour<".$brightTime_arr[1]."){darkContent('".$brightTime_arr[2]."')};" : '';
+    $string .= (Helper::options()->katexOption) ? 'renderMath=function(className){renderMathInElement(className,'. Helper::options()->katexOption .')};if($(".post-content").length){renderMath($(".post-content")[0])}' : '';
     $string .= (Helper::options()->otherJs) ? Helper::options()->otherJs : '';
     $string .= '</script>';
-    $string .= (!Helper::options()->describe) ? "<script src='https://v1.hitokoto.cn/?encode=js&select=%23hitokoto' defer></script>" : '';
+    $string .= (!Helper::options()->describe) ? "<script>Hitokoto();</script>" : '';
+    $string .= (Helper::options()->otherFooter) ?? '';
     echo $string;
   }
 }
@@ -276,6 +317,8 @@ function otherPjax(){
     $string = "<script>$(document).on('pjax:complete',function(){";
     $string .= (Helper::options()->statisticsBaidu) ? "if(typeof _hmt !== 'undefined'){ _hmt.push(['_trackPageview', location.pathname + location.search])};" : '';
     $string .= (Helper::options()->qrcode && in_array('open', Helper::options()->qrcode)) ? "if(!$('.post-content').length){ $('.qrcode').css('display', 'none')}else{ $('.qrcode').css('display', 'block')};" : '';
+    $string .= (!Helper::options()->describe) ? "Hitokoto();" : '';
+    $string .= (Helper::options()->katexOption) ? 'if($(".post-content").length){renderMath($(".post-content")[0])}' : '';
     $string .= (Helper::options()->otherPjax) ? Helper::options()->otherPjax : '';
     $string .= "});</script>";
     echo $string;
@@ -288,12 +331,13 @@ function bgUrl(){
   $setting_phone = Helper::options()->bgphoneUrl;
   $setting_bgf = Helper::options()->bgFilter;
   $textareaBG = (Helper::options()->textareaBG) ?  Helper::options()->textareaBG : staticFiles('images/textarea.png',1);
+  $loadingUrl = (Helper::options()->loadingUrl) ?  Helper::options()->loadingUrl : staticFiles('images/loading.gif', 1);
   if($setting_bgf > 0){
     echo "<style>.index-filter{backdrop-filter: blur(".$setting_bgf."px);}</style>";
   }else{
     echo "<style>.index-filter{display: none}</style>";
   }
-  ?><style>.comment-textarea{background-image: url("<?php echo $textareaBG ?>");}.index-img{background-image: url("<?php staticFiles('images/loading.gif'); ?>")}</style><?php
+  ?><style>.comment-textarea{background-image: url("<?php echo $textareaBG ?>");}.index-img{background-image: url("<?php echo $loadingUrl ?>")}</style><?php
   if(empty($setting) && empty($setting_phone)){
     ?><style>.background{background-image: url("<?php staticFiles('images/bg.jpg'); ?>");}</style><?php
   }else{
@@ -392,6 +436,10 @@ function Footer(){
   $gabeian = Helper::options()->gabeian;
   $moebei = Helper::options()->moebei;
   $beian = Helper::options()->beian;
+  $copy = Helper::options()->copy;
+  $copy = preg_replace('/{site}/', Helper::options()->siteUrl, $copy);
+  $copy = preg_replace('/{name}/', Helper::options()->title, $copy);
+  $copy = preg_replace('/{year}/', date('Y'), $copy);
   if($gabeian){
     preg_match_all("/\d+/", $gabeian,$num);
     $num = $num[0][0];
@@ -401,15 +449,14 @@ function Footer(){
     $num2 = $num2[0][0];
   }
   if(($beian && $gabeian) || ($beian && $moebei) || ($gabeian && $moebei) || ($beian && $gabeian && $moebei)){
-    $divide = '<span class="footer-divide">｜</span>';
     $content .= '<br><br>';
-  }else{
-    $divide = '｜';
+  } elseif ($beian || $gabeian || $moebei) {
+    $content .= '｜';
   }
-  $content .= ($moebei) ? $divide.'<a href="https://icp.gov.moe" target="_blank">萌ICP备</a><a href="https://icp.gov.moe/?keyword='.$num2.'" target="_blank">'.$num2.'号</a>' : '';
-  $content .= ($beian) ? $divide.'<a href="//beian.miit.gov.cn">'.Helper::options()->beian.'</a>' : '';
-  $content .= ($gabeian) ?  $divide.'<img style="vertical-align:middle" src="'.staticFiles('images/beian.png', 1).'"> <a href="//www.beian.gov.cn/portal/registerSystemInfo?recordcode='.$num.'">'.Helper::options()->gabeian.'</a>' : '';
-  echo $footer.'<p>&copy; '.date("Y").' <a href="'.Helper::options()->siteUrl.'">'.Helper::options()->title.'</a>'.$content.'<br><br><span id="cuckoo-copy">Theme <a href="https://github.com/bhaoo/cuckoo" target="_blank">Cuckoo</a> by <a href="https://dwd.moe/" target="_blank">Bhao</a>｜Powered By <a href="http://www.typecho.org" target="_blank">Typecho</a></span></p>';
+  $content .= ($moebei) ? '<span><a href="https://icp.gov.moe" target="_blank">萌ICP备</a><a href="https://icp.gov.moe/?keyword='.$num2.'" target="_blank">'.$num2.'</a>号</span>' : '';
+  $content .= ($beian) ? '<span><a href="//beian.miit.gov.cn">'.Helper::options()->beian.'</a></span>' : '';
+  $content .= ($gabeian) ? '<span><img style="vertical-align:middle" src="'.staticFiles('images/beian.png', 1).'" height="20" width="20" alt="公安备案"> <a href="//www.beian.gov.cn/portal/registerSystemInfo?recordcode='.$num.'">'.Helper::options()->gabeian.'</a></span>' : '';
+  echo $footer.'<p>'.$copy.$content.'<br><br><span id="cuckoo-copy">Theme <a href="https://github.com/bhaoo/cuckoo" target="_blank">Cuckoo</a> by <a href="https://dwd.moe/" target="_blank">Bhao</a>｜Powered By <a href="http://www.typecho.org" target="_blank">Typecho</a></span></p>';
 }
 
 // 友链插件
@@ -422,7 +469,7 @@ function Links($type = 0) {
       <a target='_blank' class='links-url' href='{url}'>
         <div class='mdui-col-sm-6'>
           <div class='links-card mdui-shadow-10'>
-            <div class='links-img'><img class='mdui-img-circle' src='{image}'/></div>
+            <div class='links-img'><img class='mdui-img-circle' src='{image}' loading='lazy'/></div>
             <div class='links-name links-text'>{name}</div>
             <div class='links-describe links-text'>{description}</div>
           </div>

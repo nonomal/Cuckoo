@@ -11,7 +11,7 @@
  *
  * @author Bhao
  * @link https://dwd.moe/
- * @version 2.0.1
+ * @date 2023-12-09
  */
 
 if (!defined('__TYPECHO_ROOT_DIR__')) exit;
@@ -118,10 +118,10 @@ class Cuckoo_Comments_Archive extends Widget_Abstract_Comments
                                               echo $commentClass;
                                               ?>">
       <div class="comment-image">
-        <img class="mdui-img-circle" src="<?php get_comment_avatar($this->mail); ?>" />
+        <img class="mdui-img-circle" src="<?php get_comment_avatar($this->mail); ?>" loading="lazy" />
         <?php get_comment_prefix($this->mail);
         if ($this->authorId == $this->ownerId) { ?>
-          <img src="<?php staticFiles('images/grade/author.png') ?>" class="comment-prefix" mdui-tooltip="{content: '博主'}" />
+          <img src="<?php staticFiles('images/author.png') ?>" class="comment-prefix" mdui-tooltip="{content: '博主'}" />
         <?php } ?>
       </div>
       <div class="mdui-card-header-title mdui-typo">

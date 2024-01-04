@@ -11,7 +11,7 @@
  * 
  * @author Bhao
  * @link https://dwd.moe/
- * @version 2.0.0
+ * @date 2023-08-02
  */
 
 if (!defined('__TYPECHO_ROOT_DIR__')) exit;
@@ -51,7 +51,7 @@ class Smile {
           'name' => $owoJson[$owoName]['title'],
           'css' => $owoJson[$owoName]['css'],
           'type' => $owoJson[$owoName]['type'],
-          'dir' => staticFiles('images/OwO/'.$owoName.'/', 1),
+          'dir' => staticFiles('images/OwO/'.$owoName.'/', 1, 1),
           'content' => $owoJson[$owoName]['content']
         ];
       }
@@ -108,7 +108,7 @@ class Smile {
         for ($to=0; $to<count($owoArray[$smileName]['content']); $to++) {
           $data = $owoArray[$smileName]['content'][$to]['data'];
           $file = $owoArray[$smileName]['content'][$to]['file'];
-          echo '<a no-go href="javascript:Smilies.grin(\''.$data.'\');"><div class="emoji-bq mdui-card mdui-btn"><img src="'.$owoArray[$smileName]['dir'].$file.'"/></div></a>';
+          echo '<a no-go href="javascript:Smilies.grin(\''.$data.'\');"><div class="emoji-bq mdui-card mdui-btn"><img src="'.$owoArray[$smileName]['dir'].$file.'" loading="lazy"/></div></a>';
         }
         echo '</div>';
       }

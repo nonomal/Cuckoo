@@ -11,7 +11,7 @@
  *
  * @author Bhao
  * @link https://dwd.moe/
- * @version 2.0.0
+ * @date 2023-07-19
  */
 
 if(!defined('__TYPECHO_ROOT_DIR__')) exit;
@@ -43,7 +43,10 @@ $this -> need('includes/header.php');
                     <div class="mdui-card-primary index-primary">
                       <div class="mdui-card-primary-title"><?php $this -> title(); ?></div>
                       <div class="mdui-card-primary-subtitle index-info"><?php $this -> date(); ?>
-                        ｜<?php $this -> commentsNum('0 条评论', '1 条评论', '%d 条评论'); ?></div>
+                        <?php if ($this->options->showComments) {
+                          echo '｜'; $this -> commentsNum('0 条评论', '1 条评论', '%d 条评论');
+                        } ?>
+                      </div>
                       <div class="mdui-card-primary-subtitle index-subtitle"><?php $this -> excerpt(); ?></div>
                     </div>
                   </div>

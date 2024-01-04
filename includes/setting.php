@@ -11,7 +11,7 @@
  *
  * @author Bhao
  * @link https://dwd.moe/
- * @version 2.0.1
+ * @date 2023-11-27
  */
 
 if (!defined('__TYPECHO_ROOT_DIR__')) exit;
@@ -97,7 +97,7 @@ function themeConfig($form) {
       </div>
     </div>
   </div>
-  <form class="mdui-typo" action="<?php echo $config->security->getIndex('/action/themes-edit?config') ?>" method="post" enctype="application/x-www-form-urlencoded" style="display: block!important">
+  <form id="cuckoo-form" class="mdui-typo" action="<?php echo $config->security->getIndex('/action/themes-edit?config') ?>" method="post" enctype="application/x-www-form-urlencoded" style="display: block!important">
     <div id="basic">
       <div class="setting-title">基础设置</div>
       <div class="setting-content">
@@ -153,16 +153,22 @@ function themeConfig($form) {
         $config->input('bgUrl', '背景图片(电脑)', '在这里填入一个图片 URL 地址, 以设置博客电脑背景图片').
         $config->input('bgphoneUrl', '背景图片(手机)', '在这里填入一个图片 URL 地址, 以设置博客手机背景图片').
         $config->input('bgFilter', '背景图片高斯模糊', '选择"0"即为关闭高斯模糊哦！若网站动画较卡可设置为"0"', '0').
-        $config->textarea('textareaBG', '评论框侧边图', '输入图片地址即可，默认为泠鸢yousa哦！') ?>
+        $config->input('loadingUrl', '首页文章 Loading 图', '默认则为玉子哦！').
+        $config->textarea('textareaBG', '评论框侧边图', '输入图片地址即可，默认为泠鸢yousa哦！').
+        $config->checkbox('showComments', ['open' => '默认开启，将会在文章中显示评论'], '显示评论模块', '默认开启，将会在文章中显示评论', ['open']) ?>
       </div>
     </div>
     <div id="menu">
       <div class="setting-title">更多设置</div>
       <div class="setting-content">
         <?php echo $config->select('staticFiles',
-            ['local'    =>   '本地',
-              'jsdelivr' =>   'JsDelivr',
-              'cdn'      =>   '自定义 CDN'
+            ['local'       => '本地',
+              'jsdelivr'   => 'JsDelivr',
+              'cdnjs'      => 'cdnjs',
+              'staticfile' => 'Staticfile',
+              'bootcdn'    => 'Bootcdn',
+              'baomitu'    => 'Baomitu',
+              'cdn'        => '自定义 CDN'
             ], '静态文件源', '推荐选择 “JsDelivr源”', 'local').
         $config->input('staticCdn', '自定义静态文件CDN', '在这里填写你自己的CDN(如 api.xxx.xxx)，以获取静态文件(需在上方选择自定义CDN)').
         $config->select('randimg',
@@ -173,17 +179,19 @@ function themeConfig($form) {
           ], '随机文章图源', '在这里可以设置随机文章图源，仅当文章没有设置图片时引用。”', '9jojo').
         $config->input('randimgCdn', '自定义随机文章图CDN', '在这里填写你自己的CDN(如 api.xxx.xxx)，以获取随机图片(需在上方选择自定义CDN)').
         $config->select('gravatar',
-          ['geekzu' => '极客族',
+          ['cravatar' => 'Cravatar',
+           'geekzu' => '极客族',
            'qiniu'  => '七牛',
            'cdn'    => '自定义 CDN'
-          ], 'Gravatar头像源', '在这里可以设置Gravatar头像源','geekzu').
+          ], 'Gravatar头像源', '在这里可以设置Gravatar头像源(Cravatar 支持 QQ头像)','cravatar').
         $config->input('gravatarCdn', '自定义Gravatar头像源CDN', '在这里填写你自己的CDN(如 api.xxx.xxx)，以获取随机图片(需在上方选择自定义CDN)').
         $config->input('sticky', '置顶文章', '置顶的文章cid，按照排序输入, 请以半角逗号或空格分隔。').
         $config->input('statisticsBaidu', '百度统计', '仅需要输入"https://hm.baidu.com/hm.js?xxxxxx"中的"xxxxxx部分即可"').
         $config->checkbox('qrcode', ['open' => '默认开启，将会在文章&页面导航栏中显示按钮'], '跨设备阅读', '默认开启，将会在文章&页面导航栏中显示按钮', ['open']).
         $config->input('tagCloud', '标签云', '请根据自己所需填写展示数量，输入“0”则不显示标签云', '0').
         $config->textarea('brightTime', '定时开/关暗色模式', '填写格式(24H)：开启时间,关闭时间,输出信息 默认为空即为不开启 例: 22,6,深色模式开启').
-        $config->textarea('Footer', '底部信息', '在这里填写的信息将在底部显示哦～').
+        $config->textarea('Footer', '底部信息', '在这里填写的信息将在底部显示哦～ 温馨提示：若发现顶头可以用 p 标签包括你的内容哦！').
+        $config->textarea('copy', '站点版权', '可用变量 | {site}: 站点链接 | {name}: 基础设置-昵称 | {year}: 当前年份', '&copy; {year} <a href="{site}">{name}</a>').
         $config->input('globalFontWeight', '全局字体粗细', '用于设置全局字体粗细，无需填写全局字体也可以进行设置')
         ?>
       </div>
@@ -212,8 +220,17 @@ function themeConfig($form) {
           },{
             "type":"6"
           }]').
+        $config->textarea('katexOption', 'Katex 选项配置', '在这里可以自定义 Katex 选项配置，可以看看这里哦！<a href="https://katex.org/docs/autorender.html">Katex Auto-render Extension</a>',
+        "{
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false},
+          ]
+        }").
         $config->textarea('drawerBottom', '抽屉底部功能', '可以在此往抽屉底部添加按钮，最多仅能展示6个。').
-        $config->textarea('otherCss', '更多CSS', '输入你所想要添加的CS即可哦！').
+        $config->textarea('otherHeader', '顶部引用', '输入你所想要添加的内容即可哦！').
+        $config->textarea('otherFooter', '底部引用', '输入你所想要添加的内容即可哦！').
+        $config->textarea('otherCss', '更多CSS', '输入你所想要添加的CSS即可哦！').
         $config->textarea('otherJs', '更多JS', '输入你所想要添加的JS即可哦！').
         $config->textarea('otherPjax', 'PJAX回调', '在这里可以自行添加PJAX回调内容,引号需用“单引号”').
         $config->input('fontUrl', '字体CSS链接', '填写即启用了自定义字体功能，不填写仅能使用部分字体').
@@ -225,7 +242,7 @@ function themeConfig($form) {
     <div id="plugins">
       <div class="setting-title">插件扩展</div>
       <?php $config->plugin('Links', '友链插件',
-      $config->input('linksIndexNum', '主页友链展示个数', '在这里填写主页友链最多展示个数，默认为 0（则不显示），推荐设置为 10 个', 0).
+      $config->input('linksIndexNum', '主页友链展示个数', '在这里填写主页友链最多展示个数，默认为 0（则不显示），推荐设置为 10 个', '0').
       $config->checkbox('linksshuffle', ['open' => '默认开启，开启将会打乱顺序展示'], '是否打乱顺序展示', '默认开启，开启将会打乱顺序展示', ['open'])).
       $config->page('Bilibili 追番', '需创建独立页面才会展示哦',
       $config->input('BilibiliUid', 'B站UID', '请认真填写好，记得检查别填错啦！').
